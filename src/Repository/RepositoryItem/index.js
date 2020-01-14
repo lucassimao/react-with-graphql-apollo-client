@@ -1,8 +1,53 @@
 import React from "react";
 import Link from "../../Link";
+import gql from "graphql-tag";
+import REPOSITORY_FRAGMENT from "../fragments";
+import { Mutation } from "react-apollo";
 import "../style.css";
+import Button from "../../Button";
+
+const STAR_REPOSITORY = gql`
+  mutation($id: ID!) {
+    addStar(input: { starrableId: $id }) {
+      starrable {
+        id
+        viewerHasStarred
+      }
+    }
+  }
+`;
+
+const updateAddStar = (
+  client,
+  {
+    data: {
+      addStar: {
+        starrable: { id }
+      }
+    }
+  }
+) => {
+  const repository = client.readFragment({
+    id: `Repository:${id}`,
+    fragment: REPOSITORY_FRAGMENT
+  });
+
+  const totalCount = repository.stargazers.totalCount + 1;
+  client.writeFragment({
+    id: `Repository:${id}`,
+    fragment: REPOSITORY_FRAGMENT,
+    data: {
+      ...repository,
+      stargazers: {
+        ...repository.stargazers,
+        totalCount
+      }
+    }
+  });
+};
 
 const RepositoryItem = ({
+  id,
   name,
   url,
   descriptionHTML,
@@ -18,7 +63,19 @@ const RepositoryItem = ({
       <h2>
         <Link href={url}>{name}</Link>
       </h2>
-      <div className="RepositoryItem-title-action">{stargazers.totalCount} Stars</div>
+      <div className="RepositoryItem-title-action">
+        {!viewerHasStarred ? (
+          <Mutation update={updateAddStar} mutation={STAR_REPOSITORY} variables={{ id }}>
+            {(addStar, { data, loading, error }) => (
+              <Button className={"RepositoryItem-title-action"} onClick={addStar}>
+                {stargazers.totalCount} Star
+              </Button>
+            )}
+          </Mutation>
+        ) : (
+          <span>{/* Here comes your removeStar mutation */}</span>
+        )}
+      </div>
     </div>
     <div className="RepositoryItem-description">
       <div
