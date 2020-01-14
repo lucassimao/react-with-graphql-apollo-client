@@ -3,7 +3,7 @@ import { Query } from "react-apollo";
 import gql from "graphql-tag";
 import RepositoryList from "../Repository";
 import Loading from "../Loading";
-
+import ErrorMessage from '../Error';
 const GET_CURRENT_USER = gql`
   {
     viewer {
@@ -38,8 +38,10 @@ const GET_CURRENT_USER = gql`
 
 const Profile = () => (
   <Query query={GET_CURRENT_USER}>
-    {({ data, loading }) => {
-
+    {({ data, loading, error }) => {
+      if (error) {
+        return <ErrorMessage error={error} />;
+      }
 
       if (!data || loading) {
         return <div> Loading ... </div>;
